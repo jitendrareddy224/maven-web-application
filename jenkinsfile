@@ -1,0 +1,50 @@
+node{
+    
+    def mavenHome = tool name: "Maven-3.8.2"
+    
+echo "GitHub BranchName ${env,BRANCH_NAME}
+echo "Jenkins Job Number ${env,BUILD_NUMBER}
+echo "Jenkins Node Name ${env,NODE_NAME}
+
+echo "Jenkins Home ${env,JENKINS_HOME}
+echo "Jenkins URL  ${env,JENKINS_URL}
+echo "Job Name ${env,JOB_NAME}
+
+
+     stage('CheckOutCode')                         
+       {
+              git branch: 'development', credentialsId: '89cb1864-e077-4ae1-bada-96d24a870de0', url: 'https://github.com/jitendrareddy224/maven-web-application.git'  
+                        
+       }
+
+      stage('Build')
+
+      {
+      sh "${mavenHome}/bin/mvn clean package"
+      }
+      
+       stage('SonarQubeReport')
+      {
+      sh "${mavenHome}/bin/mvn clean sonar:sonar"      
+      }
+      stage('Build')
+      {
+      sh "${mavenHome}/bin/mvn clean deploy"       
+      }
+     
+     stage('DeployAppIntoTomcatServer')
+          {
+          sshagent(['2c08f46c-d2ac-4f74-ac93-ce2c4f3ed9ca']) {
+          sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.232.126.85:/opt/apache-tomcat-9.0.52/webapps/"  
+             }
+           }
+     stage('SendEmailNotification')
+        {
+     emailext body: '''Build is Over ..!!
+
+
+     Regards//
+     Jitendra Reddy ''', subject: 'Build Over ..!!', to: 'gourujitendra224@gamil.com,gouru224@gamail.com'
+
+    } 
+} 
